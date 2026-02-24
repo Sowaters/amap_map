@@ -82,6 +82,9 @@ class AMapWidget extends StatefulWidget {
   /// 地图上显示的polygon
   final Set<Polygon> polygons;
 
+  /// 地图上显示的circle
+  final Set<Circle> circles;
+
   /// 地图创建成功的回调, 收到此回调之后才可以操作地图
   final MapCreatedCallback? onMapCreated;
 
@@ -153,6 +156,7 @@ class AMapWidget extends StatefulWidget {
       this.markers = const <Marker>{},
       this.polylines = const <Polyline>{},
       this.polygons = const <Polygon>{},
+      this.circles = const <Circle>{},
       this.mapLanguage,
       this.infoWindowAdapter,
       this.logoPosition,
@@ -168,6 +172,7 @@ class _MapState extends State<AMapWidget> {
   Map<String, Marker> _markers = <String, Marker>{};
   Map<String, Polyline> _polylines = <String, Polyline>{};
   Map<String, Polygon> _polygons = <String, Polygon>{};
+  Map<String, Circle> _circles = <String, Circle>{};
   final Map<String, Widget?> _infoWindows = <String, Widget?>{};
 
   final Completer<AMapController> _controller = Completer<AMapController>();
@@ -183,6 +188,7 @@ class _MapState extends State<AMapWidget> {
       'markersToAdd': serializeOverlaySet(widget.markers),
       'polylinesToAdd': serializeOverlaySet(widget.polylines),
       'polygonsToAdd': serializeOverlaySet(widget.polygons),
+      'circlesToAdd': serializeOverlaySet(widget.circles),
     };
     Widget mapView = _methodChannel.buildView(
       creationParams,
@@ -202,6 +208,7 @@ class _MapState extends State<AMapWidget> {
     _markers = keyByMarkerId(widget.markers);
     _polygons = keyByPolygonId(widget.polygons);
     _polylines = keyByPolylineId(widget.polylines);
+    _circles = keyByCircleId(widget.circles);
 
     print('initState AMapWidget');
   }
@@ -233,6 +240,7 @@ class _MapState extends State<AMapWidget> {
     updateMarkers();
     _updatePolylines();
     _updatePolygons();
+    _updateCircles();
   }
 
   Future<void> onPlatformViewCreated(int id) async {
@@ -323,6 +331,13 @@ class _MapState extends State<AMapWidget> {
     controller._updatePolygons(
         PolygonUpdates.from(_polygons.values.toSet(), widget.polygons));
     _polygons = keyByPolygonId(widget.polygons);
+  }
+
+  void _updateCircles() async {
+    final AMapController controller = await _controller.future;
+    controller._updateCircles(
+        CircleUpdates.from(_circles.values.toSet(), widget.circles));
+    _circles = keyByCircleId(widget.circles);
   }
 
   void _onInfoWindowUpdate(Marker marker) {

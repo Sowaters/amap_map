@@ -22,6 +22,8 @@
 #import "MAPolygonRenderer+Flutter.h"
 #import "AMapPolygon.h"
 #import <AMapFoundationKit/AMapFoundationKit.h>
+#import "AMapCircleController.h"
+#import "AMapCircle.h"
 #import "AMapLocation.h"
 #import "AMapJsonUtils.h"
 #import "AMapConvertUtil.h"
@@ -37,6 +39,7 @@
 @property (nonatomic,strong) AMapMarkerController *markerController;
 @property (nonatomic,strong) AMapPolylineController *polylinesController;
 @property (nonatomic,strong) AMapPolygonController *polygonsController;
+@property (nonatomic,strong) AMapCircleController *circlesController;
 
 @property (nonatomic,copy) FlutterResult waitForMapCallBack;//waitForMap的回调，仅当地图没有加载完成时缓存使用
 @property (nonatomic,assign) BOOL mapInitCompleted;//地图初始化完成，首帧回调的标记
@@ -106,6 +109,9 @@
         _polygonsController = [[AMapPolygonController alloc] init:_channel
                                                           mapView:_mapView
                                                         registrar:registrar];
+        _circlesController = [[AMapCircleController alloc] init:_channel
+                                                        mapView:_mapView
+                                                      registrar:registrar];
         id markersToAdd = args[@"markersToAdd"];
         if ([markersToAdd isKindOfClass:[NSArray class]]) {
             [_markerController addMarkers:markersToAdd];
@@ -117,6 +123,10 @@
         id polygonsToAdd = args[@"polygonsToAdd"];
         if ([polygonsToAdd isKindOfClass:[NSArray class]]) {
             [_polygonsController addPolygons:polygonsToAdd];
+        }
+        id circlesToAdd = args[@"circlesToAdd"];
+        if ([circlesToAdd isKindOfClass:[NSArray class]]) {
+            [_circlesController addCircles:circlesToAdd];
         }
         
         [self setMethodCallHandler];
@@ -434,6 +444,19 @@
         MAPolygonRenderer *polygonRenderer = [[MAPolygonRenderer alloc] initWithPolygon:polygon];
         [polygonRenderer updateRenderWithPolygon:fPolygon];
         return polygonRenderer;
+    } else if ([overlay isKindOfClass:[MACircle class]]) {
+        MACircle *circle = overlay;
+        NSString *circleId = circle.userInfo[@"circleId"];
+        if (circleId == nil) {
+            return nil;
+        }
+        AMapCircle *fCircle = [_circlesController circleForId:circleId];
+        MACircleRenderer *circleRenderer = [[MACircleRenderer alloc] initWithCircle:circle];
+        circleRenderer.strokeColor = fCircle.strokeColor;
+        circleRenderer.lineWidth = fCircle.strokeWidth;
+        circleRenderer.fillColor = fCircle.fillColor;
+        circleRenderer.hidden = !fCircle.visible;
+        return circleRenderer;
     } else {
         return nil;
     }
